@@ -10,7 +10,7 @@ import { StrictMode } from "react";
 import { App } from "./App";
 import { createBrowserRouter, RouterProvider } from "react-router";
 import Routes from "./routes/routes";
-
+import Route from "./routes/routes/[id]";
 let router = createBrowserRouter([
   {
     path: "/",
@@ -19,6 +19,10 @@ let router = createBrowserRouter([
       {
         path: "routes",
         Component: Routes,
+      },
+      {
+        path: "routes/:id",
+        Component: Route,
       },
     ],
   },
