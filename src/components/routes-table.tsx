@@ -23,6 +23,8 @@ import {
 import { cn } from "@/lib/utils"; // For shadcn class utility
 import type { Route } from "@/data/routes";
 import { Link } from "react-router";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
 
 const routeTypeMap: { [key: number]: string } = {
   0: "Light Rail",
@@ -41,6 +43,7 @@ interface RoutesTableProps {
 
 function RoutesTable({ data }: RoutesTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [search, setSearch] = React.useState<string>("");
 
   const columns = React.useMemo<Array<ColumnDef<Route>>>(
     () => [
@@ -93,8 +96,15 @@ function RoutesTable({ data }: RoutesTableProps) {
     []
   );
 
+  const filteredData = useMemo(() => {
+    return data.filter((route) =>
+      route.route_desc.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [data, search]);
+
   const table = useReactTable({
-    data,
+    data: filteredData,
+    getRowId: (row) => row.route_id,
     columns,
     state: {
       sorting,
@@ -109,6 +119,7 @@ function RoutesTable({ data }: RoutesTableProps) {
   const parentRef = React.useRef<HTMLDivElement>(null);
 
   const virtualizer = useVirtualizer({
+    paddingEnd: 50,
     count: rows.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 50,
@@ -117,6 +128,15 @@ function RoutesTable({ data }: RoutesTableProps) {
 
   return (
     <div ref={parentRef} className="overflow-auto max-h-[calc(100vh-4rem)]">
+      <div className="flex flex-row items-center gap-2 p-2">
+        <Input
+          placeholder="Search"
+          className="border-w-0"
+          onChange={(e) => {
+            setSearch(e.target.value);
+          }}
+        />
+      </div>
       <div
         style={{
           height: `${virtualizer.getTotalSize()}px`,
