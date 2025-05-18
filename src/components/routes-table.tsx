@@ -127,7 +127,7 @@ function RoutesTable({ data }: RoutesTableProps) {
   });
 
   return (
-    <div ref={parentRef} className="overflow-auto max-h-[calc(100vh-4rem)]">
+    <div ref={parentRef} className="overflow-auto max-h-[100vh]">
       <div className="flex flex-row items-center gap-2 p-2">
         <Input
           placeholder="Search"

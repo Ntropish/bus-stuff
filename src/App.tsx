@@ -9,11 +9,7 @@ import RoutesTable from "./components/routes-table";
 import { routesData } from "./data/routes";
 import { Outlet } from "react-router";
 export function App() {
-  return (
-    <div className="container mx-auto py-[1rem]">
-      <Outlet />
-    </div>
-  );
+  return <Outlet />;
 }
 
 export default App;
