@@ -47,18 +47,17 @@ function RoutesTable({ data }: RoutesTableProps) {
         accessorKey: "route_id",
         header: "ID",
         size: 80,
+        cell: (info) => (
+          <div className="font-bold">{info.getValue<string>()}</div>
+        ),
       },
-      //   {
-      //     accessorKey: "agency_id",
-      //     header: "Agency ID",
-      //     size: 100,
-      //   },
+
       {
         accessorKey: "route_long_name",
         header: "Route Name",
         cell: (info) => (
           <div
-            className="rounded-md p-1 px-2"
+            className="rounded-md p-1 px-2 text-center text-sm font-bold"
             style={{
               backgroundColor: `#${info.row.original.route_color}`,
               color: `#${info.row.original.route_text_color}`,
@@ -86,12 +85,6 @@ function RoutesTable({ data }: RoutesTableProps) {
         cell: (info) => routeTypeMap[info.getValue<number>()] || "Unknown",
         size: 120,
       },
-
-      //   {
-      //     accessorKey: "route_sort_order",
-      //     header: "Sort Order",
-      //     size: 100,
-      //   },
     ],
     []
   );
@@ -114,24 +107,22 @@ function RoutesTable({ data }: RoutesTableProps) {
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 50, // Adjust based on your row height
-    overscan: 20, // Render more items around the visible area
+    estimateSize: () => 50,
+    overscan: 10,
   });
 
   return (
-    <div ref={parentRef} className="overflow-auto h-[400px]">
-      {" "}
-      {/* Ensure 'container' class provides necessary styles like overflow: auto and height */}
+    <div ref={parentRef} className="overflow-auto max-h-[calc(100vh-4rem)]">
       <div
         style={{
           height: `${virtualizer.getTotalSize()}px`,
           position: "relative",
         }}
       >
-        <table>
-          <thead className="">
+        <Table>
+          <TableHeader className="">
             {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
+              <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   return (
                     <TableHead
@@ -162,14 +153,14 @@ function RoutesTable({ data }: RoutesTableProps) {
                     </TableHead>
                   );
                 })}
-              </tr>
+              </TableRow>
             ))}
-          </thead>
-          <tbody>
+          </TableHeader>
+          <TableBody>
             {virtualizer.getVirtualItems().map((virtualRow, index) => {
               const row = rows[virtualRow.index];
               return (
-                <tr
+                <TableRow
                   key={row.id}
                   style={{
                     height: `${virtualRow.size}px`,
@@ -188,11 +179,11 @@ function RoutesTable({ data }: RoutesTableProps) {
                       </TableCell>
                     );
                   })}
-                </tr>
+                </TableRow>
               );
             })}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
