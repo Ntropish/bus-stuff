@@ -10,7 +10,7 @@ export default function Routes() {
   const first10Routes = routes.slice(0, 10);
   return (
     <Card className="bg-card/50 backdrop-blur-sm border-muted">
-      <CardContent className="">
+      <CardContent className="p-0">
         <div className="h-full">
           <RoutesTable data={routes} />
         </div>

@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/table"; // Adjust path if needed
 import { cn } from "@/lib/utils"; // For shadcn class utility
 import type { Route } from "@/data/routes";
+import { Link } from "react-router";
 
 const routeTypeMap: { [key: number]: string } = {
   0: "Light Rail",
@@ -48,25 +49,12 @@ function RoutesTable({ data }: RoutesTableProps) {
         header: "ID",
         size: 80,
         cell: (info) => (
-          <div className="font-bold">{info.getValue<string>()}</div>
+          <Link to={`/routes/${info.getValue<string>()}`}>
+            <div className="font-bold p-1 px-4 text-center rounded-sm hover:bg-muted border-1 ">
+              {info.getValue<string>()}
+            </div>
+          </Link>
         ),
-      },
-
-      {
-        accessorKey: "route_long_name",
-        header: "Route Name",
-        cell: (info) => (
-          <div
-            className="rounded-md p-1 px-2 text-center text-sm font-bold"
-            style={{
-              backgroundColor: `#${info.row.original.route_color}`,
-              color: `#${info.row.original.route_text_color}`,
-            }}
-          >
-            {info.getValue<string>()}
-          </div>
-        ),
-        size: 260,
       },
 
       {
@@ -84,6 +72,22 @@ function RoutesTable({ data }: RoutesTableProps) {
         header: "Type",
         cell: (info) => routeTypeMap[info.getValue<number>()] || "Unknown",
         size: 120,
+      },
+      {
+        accessorKey: "route_long_name",
+        header: "",
+        cell: (info) => (
+          <div
+            className="rounded-md p-1 px-2 text-center text-sm font-bold"
+            style={{
+              backgroundColor: `#${info.row.original.route_color}`,
+              color: `#${info.row.original.route_text_color}`,
+            }}
+          >
+            {info.getValue<string>()}
+          </div>
+        ),
+        size: 260,
       },
     ],
     []
