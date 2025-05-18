@@ -14,8 +14,10 @@ export function App() {
   return (
     <div className="container mx-auto p-8 text-center relative z-10">
       <Card className="bg-card/50 backdrop-blur-sm border-muted">
-        <CardContent className="pt-6 h-full">
-          <RoutesTable data={routes} />
+        <CardContent className="">
+          <div className="">
+            <RoutesTable data={routes} />
+          </div>
         </CardContent>
       </Card>
     </div>

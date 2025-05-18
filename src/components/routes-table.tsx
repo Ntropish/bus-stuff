@@ -1,11 +1,13 @@
 // src/components/RoutesTable.tsx
-import React, { useRef } from "react";
+import React, { useRef, useMemo } from "react";
 import {
   type ColumnDef,
   flexRender,
   getCoreRowModel,
   useReactTable,
-  type Row as TableRowType, // Renamed to avoid conflict with shadcn TableRow
+  type Row as TableRowType, // Renamed to avoid conflict
+  type SortingState,
+  getSortedRowModel,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 
@@ -16,7 +18,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"; // Your shadcn table components
+} from "@/components/ui/table"; // Adjust path if needed
+import { cn } from "@/lib/utils"; // For shadcn class utility
 import type { Route } from "@/data/routes";
 
 // Helper function to get human-readable route type names
@@ -37,6 +40,7 @@ const getRouteTypeName = (routeType: number): string => {
 };
 
 // Define columns for the table
+// Ensure 'size' is defined for each column for proper width calculation
 export const columns: ColumnDef<Route>[] = [
   {
     accessorKey: "route_long_name",
@@ -51,7 +55,7 @@ export const columns: ColumnDef<Route>[] = [
           style={{
             backgroundColor: `#${route.route_color}`,
             color: `#${route.route_text_color}`,
-            padding: "3px 8px",
+            padding: "4px 8px",
             borderRadius: "4px",
             textDecoration: "none",
             display: "inline-block",
@@ -62,14 +66,15 @@ export const columns: ColumnDef<Route>[] = [
                 ? "rgba(0,0,0,0.2)"
                 : route.route_text_color
             }`,
+            lineHeight: "normal",
           }}
-          className="hover:opacity-80 transition-opacity"
+          className="hover:opacity-80 transition-opacity text-sm"
         >
           {route.route_long_name || route.route_short_name || "N/A"}
         </a>
       );
     },
-    size: 250, // Example fixed size
+    size: 280,
   },
   {
     accessorKey: "route_id",
@@ -79,7 +84,7 @@ export const columns: ColumnDef<Route>[] = [
   {
     accessorKey: "route_desc",
     header: "Description",
-    size: 400,
+    size: 380,
   },
   {
     accessorKey: "route_type",
@@ -92,136 +97,149 @@ export const columns: ColumnDef<Route>[] = [
     header: "Agency ID",
     size: 100,
   },
+  {
+    accessorKey: "route_sort_order",
+    header: "Sort Order",
+    size: 100,
+  },
 ];
 
 interface RoutesTableProps {
   data: Route[];
-  height?: string; // Allow dynamic height for the scroll container
+  height?: string; // e.g., "600px", "70vh"
 }
 
 export function RoutesTable({ data, height = "600px" }: RoutesTableProps) {
-  console.log(data);
+  const [sorting, setSorting] = React.useState<SortingState>([]);
 
   const table = useReactTable({
     data,
     columns,
+    state: {
+      sorting,
+    },
+    onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    // debugTable: true,
   });
 
-  const tableContainerRef = useRef<HTMLDivElement>(null);
+  // This ref is for the single scrollable container that holds the entire table
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
   const { rows } = table.getRowModel();
 
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
-    getScrollElement: () => tableContainerRef.current,
-    estimateSize: () => 52, // Estimate row height (in px). Adjust based on your cell padding and content.
-    overscan: 10, // Number of items to render outside the visible area
+    getScrollElement: () => scrollContainerRef.current,
+    estimateSize: () => 52, // Crucial: Average height of a row in px.
+    overscan: 10,
   });
 
   const virtualRows = rowVirtualizer.getVirtualItems();
-  const totalSize = rowVirtualizer.getTotalSize();
 
-  const paddingTop = virtualRows.length > 0 ? virtualRows[0]?.start || 0 : 0;
-  const paddingBottom =
-    virtualRows.length > 0
-      ? totalSize - (virtualRows[virtualRows.length - 1]?.end || 0)
-      : 0;
+  const totalColumnWidth = useMemo(() => {
+    return table.getCenterTotalSize();
+  }, [table]);
 
   return (
     <div
-      ref={tableContainerRef}
-      className="rounded-md border" // shadcn classes for border and rounded corners
+      ref={scrollContainerRef} // The main scrolling container
+      className="rounded-md border bg-card text-card-foreground shadow-sm overflow-auto" // Handles both vertical and horizontal scroll
       style={{
-        overflow: "auto", // Enable scrolling
-        height: height, // Set the container height
+        height: height, // Fixed height for the scrollable area
+        position: "relative", // Needed for sticky header to work within this container
       }}
     >
-      <Table style={{ width: "100%" }}>
-        {" "}
-        {/* Ensure table takes full width of container */}
-        <TableHeader
+      {/* This inner div establishes the total virtual height and width for content */}
+      <div
+        style={{
+          height: `${rowVirtualizer.getTotalSize()}px`,
+          width: `${totalColumnWidth}px`,
+          position: "relative",
+        }}
+      >
+        <Table
           style={{
-            position: "sticky",
-            top: 0,
-            zIndex: 1,
-            backgroundColor: "hsl(var(--background))", // Use shadcn background variable
+            width: "100%", // Takes full width of the height-setting div (i.e., totalColumnWidth)
+            tableLayout: "fixed",
           }}
+          className="border-collapse"
         >
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <TableHead
-                  key={header.id}
-                  style={{
-                    width: header.getSize(), // Use column defined size
-                    minWidth: header.getSize(), // Ensure minWidth
-                    maxWidth: header.getSize(), // Prevent exceeding size for fixed layout
-                  }}
-                >
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                </TableHead>
-              ))}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody
-          style={{
-            height: `${totalSize}px`, // Set height for virtualizer
-            position: "relative", // Needed for absolute positioning of rows
-            width: "100%",
-          }}
-        >
-          {paddingTop > 0 && (
-            <TableRow style={{ height: `${paddingTop}px` }}>
-              <TableCell colSpan={columns.length} />
-            </TableRow>
-          )}
-          {virtualRows.map((virtualRow) => {
-            const row = rows[virtualRow.index] as TableRowType<Route>;
-            return (
-              <TableRow
-                key={row.id}
-                data-index={virtualRow.index}
-                ref={(node) => rowVirtualizer.measureElement(node)}
-                style={{
-                  display: "flex", // Use flex for row layout
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: "100%",
-                  height: `${virtualRow.size}px`,
-                  transform: `translateY(${virtualRow.start}px)`,
-                }}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell
-                    key={cell.id}
-                    style={{
-                      width: cell.column.getSize(), // Use column defined size
-                      minWidth: cell.column.getSize(),
-                      maxWidth: cell.column.getSize(),
-                      display: "flex",
-                      alignItems: "center", // Vertically align content in cell
-                    }}
+          <TableHeader
+            // Sticky header: stays at the top of the scrollContainerRef
+            // Needs a background color to not be transparent when rows scroll underneath
+            className="bg-card sticky top-0 z-10 border-b" // Using bg-card for theme consistency
+          >
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id} className="border-0">
+                {headerGroup.headers.map((header) => (
+                  <TableHead
+                    key={header.id}
+                    style={{ width: header.getSize() }}
+                    className={cn(
+                      "px-3 py-2.5 text-sm font-medium",
+                      header.column.getCanSort()
+                        ? "cursor-pointer select-none"
+                        : ""
+                    )}
+                    onClick={header.column.getToggleSortingHandler()}
                   >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                    {{
+                      asc: " 🔼",
+                      desc: " 🔽",
+                    }[header.column.getIsSorted() as string] ?? null}
+                  </TableHead>
                 ))}
               </TableRow>
-            );
-          })}
-          {paddingBottom > 0 && (
-            <TableRow style={{ height: `${paddingBottom}px` }}>
-              <TableCell colSpan={columns.length} />
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {virtualRows.map((virtualRow, virtualItemIndex) => {
+              const row = rows[virtualRow.index];
+              return (
+                <TableRow
+                  key={row.id}
+                  data-index={virtualRow.index}
+                  ref={(node) => rowVirtualizer.measureElement(node)}
+                  className="hover:bg-muted/50 transition-colors data-[state=selected]:bg-muted"
+                  style={{
+                    height: `${virtualRow.size}px`,
+                    transform: `translateY(${
+                      virtualRow.start - virtualItemIndex * virtualRow.size
+                    }px)`,
+                    display: "flex",
+                    width: "100%",
+                  }}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell
+                      key={cell.id}
+                      style={{
+                        width: cell.column.getSize(),
+                        minWidth: cell.column.getSize(),
+                        maxWidth: cell.column.getSize(),
+                      }}
+                      className="px-3 py-2.5 text-sm flex items-center"
+                    >
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }
